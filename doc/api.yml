@@ -1,0 +1,92 @@
+openapi: 3.0.3
+info:
+  title: Exam1Pratique - API Bonus
+  description: >
+    Documentation de l'endpoint bonus permettant de vérifier la disponibilité
+    d'un livre à partir de son ISBN, en interrogeant Open Library en priorité
+    puis Google Books en repli.
+  version: 1.0.0
+
+paths:
+  /bonus/livres/{isbn}:
+    get:
+      summary: Vérifie la disponibilité d'un livre par son ISBN
+      description: >
+        Interroge Open Library (Option A) ; si le livre n'y figure pas,
+        bascule automatiquement sur Google Books. Si le livre est introuvable
+        dans les deux sources, retourne une réponse 404 avec un message
+        d'erreur explicite plutôt qu'une exception technique.
+      operationId: verifierDisponibiliteLivre
+      tags:
+        - Bonus
+      parameters:
+        - name: isbn
+          in: path
+          required: true
+          description: ISBN-10 ou ISBN-13 du livre (tirets et espaces tolérés)
+          schema:
+            type: string
+            example: "978-0-13-235088-4"
+      responses:
+        "200":
+          description: Le livre a été trouvé sur Open Library ou Google Books.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LivreDisponibilite"
+              example:
+                isbn: "9780132350884"
+                disponible: true
+                source: "Open Library"
+                titre: "Clean Code"
+                auteurs: ["Robert C. Martin"]
+                message: "Livre trouvé sur Open Library."
+        "404":
+          description: Le livre est introuvable sur Open Library et sur Google Books.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LivreDisponibilite"
+              example:
+                isbn: "0000000000"
+                disponible: false
+                source: null
+                titre: null
+                auteurs: []
+                message: >
+                  Aucun livre correspondant à cet ISBN n'a été trouvé, ni sur
+                  Open Library, ni sur Google Books.
+        "400":
+          description: L'ISBN fourni n'a pas un format valide (ISBN-10/13).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erreur:
+                    type: string
+              example:
+                erreur: "Le format de l'ISBN 'pas-un-isbn' est invalide."
+
+components:
+  schemas:
+    LivreDisponibilite:
+      type: object
+      properties:
+        isbn:
+          type: string
+        disponible:
+          type: boolean
+        source:
+          type: string
+          nullable: true
+          description: "'Open Library' ou 'Google Books', null si introuvable."
+        titre:
+          type: string
+          nullable: true
+        auteurs:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
